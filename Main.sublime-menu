@@ -1,0 +1,24 @@
+[{
+    "caption": "Preferences",
+    "id": "preferences",
+    "mnemonic": "n",
+    "children": [{
+        "caption": "Package Settings",
+        "id": "package-settings",
+        "mnemonic": "P",
+        "children": [{
+            "caption": "Conda",
+            "children": [
+                {
+                    "caption": "Settings",
+                    "command": "edit_settings",
+                    "args":
+                     {
+                         "base_file": "${packages}/Conda/Conda (${platform}).sublime-settings",
+                         "default": "{\n\t$0\n}\n"
+                     }
+                }
+            ]
+        }]
+    }]
+}]
