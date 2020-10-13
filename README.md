@@ -1,4 +1,7 @@
 # sublime-text3-conda-auto-complete-with-anaconda
+
+![conda.git](https://github.com/thep0y/sublime-text-3-conda-auto-complete-with-anaconda/raw/main/images/conda.gif)
+
 ### English
 Conda is a convenient virtual environment management plugin, but it cannot perform code auto-completion normally. 
 
