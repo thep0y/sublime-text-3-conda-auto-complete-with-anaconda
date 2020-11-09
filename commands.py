@@ -207,8 +207,23 @@ class ActivateCondaEnvironmentCommand(CondaCommand):
             project_data['conda_environment'] = self.conda_environments[index][1]
 
             home = os.environ['HOME']
-            with open(home + "/Library/Application Support/Sublime Text 3/Packages/User/Anaconda.sublime-settings", "w") as f:
-                f.write(json.dumps({"python_interpreter": self.conda_environments[index][1]+"/bin/python"}))
+            if sys.platform == 'linux':
+                anaconda_settings_path = home + '/.config/sublime-text-3/Packages/User/Anaconda.sublime-settings'
+            elif sys.platform == 'darwin':
+                anaconda_settings_path = home + "/Library/Application Support/Sublime Text 3/Packages/User/Anaconda.sublime-settings"
+            elif sys.platform == 'win32':
+                # anaconda_settings_path = home + '\\AppData\\Roaming\\Sublime Text 3\\Packages\\User\\Anaconda.sublime-settings'
+                pass
+
+            if os.path.exists(anaconda_settings_path):
+                with open(anaconda_settings_path, 'r', encoding='utf-8') as f:
+                    content = json.loads(f.read())
+            else:
+                content = {}
+
+            with open(anaconda_settings_path, 'w', encoding='utf-8') as f:
+                content["python_interpreter"] = self.conda_environments[index][1] + "/bin/python"
+                f.write(json.dumps(content))
 
             self.window.set_project_data(project_data)
 
