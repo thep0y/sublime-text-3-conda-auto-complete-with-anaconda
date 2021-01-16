@@ -13,7 +13,6 @@ import sublime_plugin
 
 class CondaCommand(sublime_plugin.WindowCommand):
     """Contains all of the attributes that will be inherited by other commands."""
-
     @property
     def settings(self):
         """Load the platform-specific plugin settings for commands to use."""
@@ -49,8 +48,7 @@ class CondaCommand(sublime_plugin.WindowCommand):
             directory = os.path.expanduser(self.settings.get('environment_directory'))
 
             environments = [['base', self.base_directory]]
-            environments.extend([[environment, os.path.join(directory, environment)]
-                                for environment in os.listdir(directory)])
+            environments.extend([[environment, os.path.join(directory, environment)] for environment in os.listdir(directory)])
 
             return environments
 
@@ -94,7 +92,6 @@ class CondaCommand(sublime_plugin.WindowCommand):
 
 class CreateCondaEnvironmentCommand(CondaCommand):
     """Contains the methods needed to create a conda environment."""
-
     @property
     def python_versions(self):
         """Get list of python versions from online conda repo."""
@@ -103,7 +100,7 @@ class CreateCondaEnvironmentCommand(CondaCommand):
 
         bit = self.settings.get("architecture")
 
-        url = "https://repo.anaconda.com/pkgs/main/"+system+"-"+bit+"/"
+        url = "https://repo.anaconda.com/pkgs/main/" + system + "-" + bit + "/"
         r = requests.get(url)
 
         v_list = re.findall(r"(?:>python-)(\d{1,2}.\d{1,2}.\d{1,2})[^<]+", r.text)
@@ -122,8 +119,7 @@ class CreateCondaEnvironmentCommand(CondaCommand):
         This environment name is then passed to the create_environment
         method.
         """
-        self.window.show_input_panel('Conda Environment Name:', '',
-                                     self.retrieve_python_version, None, None)
+        self.window.show_input_panel('Conda Environment Name:', '', self.retrieve_python_version, None, None)
 
     def retrieve_python_version(self, environment):
         """Display a list of available Python versions for the environment.
@@ -140,17 +136,15 @@ class CreateCondaEnvironmentCommand(CondaCommand):
         if index != -1:
             selection = self.python_versions[index]
 
-            python_version = 'python='+selection[7:]
+            python_version = 'python=' + selection[7:]
 
-            cmd = [self.executable, '-m', 'conda', 'create',
-                   '--name', self.environment, python_version, '-y', '-q']
+            cmd = [self.executable, '-m', 'conda', 'create', '--name', self.environment, python_version, '-y', '-q']
 
             self.window.run_command('exec', {'cmd': cmd})
 
 
 class RemoveCondaEnvironmentCommand(CondaCommand):
     """Contains the methods needed to remove a conda environment."""
-
     def run(self):
         """Display 'Conda: Remove' in Sublime Text's command palette.
 
@@ -159,36 +153,31 @@ class RemoveCondaEnvironmentCommand(CondaCommand):
         The index of the selected environment is then passed to the
         remove_environment method"
         """
-        self.window.show_quick_panel(self.conda_environments,
-                                     self.remove_environment)
+        self.window.show_quick_panel(self.conda_environments, self.remove_environment)
 
     def remove_environment(self, index):
         """Remove a conda environment from the envs directory."""
         if index != -1:
             environment = self.conda_environments[index][0]
 
-            cmd = [self.executable, '-m', 'conda', 'remove',
-                   '--name', environment, '--all', '-y', '-q']
+            cmd = [self.executable, '-m', 'conda', 'remove', '--name', environment, '--all', '-y', '-q']
 
             self.window.run_command('exec', {'cmd': cmd})
 
 
 class ListCondaEnvironmentCommand(CondaCommand):
     """Contains the methods needed to list available conda environments."""
-
     def run(self):
         """Display 'Conda: List' in Sublime Text's command palette.
 
         When 'Conda: List' is clicked by the user, the command
         palette will show all available conda environments.
         """
-        self.window.show_quick_panel(self.conda_environments,
-                                     None)
+        self.window.show_quick_panel(self.conda_environments, None)
 
 
 class ActivateCondaEnvironmentCommand(CondaCommand):
     """Contains the methods needed to activate a conda environment."""
-
     def run(self):
         """Display 'Conda: Activate' in Sublime Text's command palette.
 
@@ -196,8 +185,7 @@ class ActivateCondaEnvironmentCommand(CondaCommand):
         palette will show all available conda environments. The
         clicked environment will be activated as the current environment.
         """
-        self.window.show_quick_panel(self.conda_environments,
-                                     self.activate_environment)
+        self.window.show_quick_panel(self.conda_environments, self.activate_environment)
 
     def activate_environment(self, index):
         """Activate the environment selected from the command palette."""
@@ -206,34 +194,37 @@ class ActivateCondaEnvironmentCommand(CondaCommand):
 
             project_data['conda_environment'] = self.conda_environments[index][1]
 
-            home = os.environ['HOME']
-            if sys.platform == 'linux':
-                anaconda_settings_path = home + '/.config/sublime-text-3/Packages/User/Anaconda.sublime-settings'
-            elif sys.platform == 'darwin':
-                anaconda_settings_path = home + "/Library/Application Support/Sublime Text 3/Packages/User/Anaconda.sublime-settings"
-            elif sys.platform == 'win32':
-                # anaconda_settings_path = home + '\\AppData\\Roaming\\Sublime Text 3\\Packages\\User\\Anaconda.sublime-settings'
-                pass
+            IS_WINDOWS = sys.platform == "win32"
+
+            if IS_WINDOWS:
+                anaconda_settings_path = os.environ['APPDATA'] + "\\Sublime Text 3\\Packages\\User\\Anaconda.sublime-settings"
+            else:
+                home = os.environ['HOME']
+                if sys.platform == 'linux':
+                    anaconda_settings_path = home + '/.config/sublime-text-3/Packages/User/Anaconda.sublime-settings'
+                elif sys.platform == 'darwin':
+                    anaconda_settings_path = home + "/Library/Application Support/Sublime Text 3/Packages/User/Anaconda.sublime-settings"
 
             if os.path.exists(anaconda_settings_path):
-                with open(anaconda_settings_path, 'r', encoding='utf-8') as f:
-                    content = json.loads(f.read())
+                try:
+                    with open(anaconda_settings_path, 'r', encoding='utf-8') as f:
+                        content = json.loads(f.read())
+                except json.JSONDecodeError:
+                    content = {}
             else:
                 content = {}
 
             with open(anaconda_settings_path, 'w', encoding='utf-8') as f:
-                content["python_interpreter"] = self.conda_environments[index][1] + "/bin/python"
+                content["python_interpreter"] = self.conda_environments[index][1] + "\\python.exe" if IS_WINDOWS else self.conda_environments[index][1] + "/bin/python"
                 f.write(json.dumps(content))
 
             self.window.set_project_data(project_data)
 
-            sublime.status_message('Activated conda environment: {}'
-                                   .format(self.conda_environments[index][0]))
+            sublime.status_message('Activated conda environment: {}'.format(self.conda_environments[index][0]))
 
 
 class DeactivateCondaEnvironmentCommand(CondaCommand):
     """Contains the methods needed to deactivate a conda environment."""
-
     def run(self):
         """Display 'Conda: Deactivate' in Sublime Text's command palette.
 
@@ -241,8 +232,7 @@ class DeactivateCondaEnvironmentCommand(CondaCommand):
         palette will show all available conda environments. The
         clicked environment will be deactivated.
         """
-        self.window.show_quick_panel(self.active_environment,
-                                     self.deactivate_environment)
+        self.window.show_quick_panel(self.active_environment, self.deactivate_environment)
 
     @property
     def active_environment(self):
@@ -266,15 +256,13 @@ class DeactivateCondaEnvironmentCommand(CondaCommand):
 
                 self.window.set_project_data(project_data)
 
-                sublime.status_message('Deactivated conda environment: {}'
-                                       .format(self.conda_environments[index][0]))
+                sublime.status_message('Deactivated conda environment: {}'.format(self.conda_environments[index][0]))
             except KeyError:
                 sublime.status_message('No active conda environment')
 
 
 class OpenCondaReplCommand(CondaCommand):
     """Open a REPL tab within the activated Conda environment."""
-
     def run(self, open_file='$file'):
         """Display 'Conda: Open REPL' in Sublime Text's command palette.
 
@@ -290,13 +278,7 @@ class OpenCondaReplCommand(CondaCommand):
         if repl_open_row:
             # set layout to 2 rows
             if (self.window.num_groups() != 2):
-                self.window.run_command(
-                    'set_layout', {
-                        'cols':[0.0, 1.0],
-                        'rows':[0.0, 0.5, 1.0],
-                        'cells':[[0, 0, 1, 1], [0, 1, 1, 2]]
-                    }
-                )
+                self.window.run_command('set_layout', {'cols': [0.0, 1.0], 'rows': [0.0, 0.5, 1.0], 'cells': [[0, 0, 1, 1], [0, 1, 1, 2]]})
 
             # return focus to file
             editor_group = 0
@@ -334,7 +316,7 @@ class OpenCondaReplCommand(CondaCommand):
         environment_path = self.project_data['conda_environment']
         executable_path = os.path.join(os.path.expanduser(environment_path), executable)
         environment = self.retrieve_environment_name(environment_path)
-        cmd_list = [executable_path,  '-u', '-i']
+        cmd_list = [executable_path, '-u', '-i']
 
         if open_file:
             cmd_list.append(open_file)
@@ -344,9 +326,7 @@ class OpenCondaReplCommand(CondaCommand):
 
         if repl_open_row:
             # move the repl into group, with focus
-            self.window.run_command(
-                'move_to_group', {'group': repl_group}
-            )
+            self.window.run_command('move_to_group', {'group': repl_group})
 
             view = self.window.active_view()
 
@@ -366,7 +346,7 @@ class OpenCondaReplCommand(CondaCommand):
         if syntax is None:
             syntax = self.settings.get('repl_syntax')
 
-        syntaxname = "Python/Python" # meaningful fallback
+        syntaxname = "Python/Python"  # meaningful fallback
         if syntax == "python":
             syntaxname = "Python/Python"
         elif syntax == "plaintext":
@@ -375,17 +355,15 @@ class OpenCondaReplCommand(CondaCommand):
             print("Conda Open REPL: Unrecognized syntax '{}'".format(syntax))
         syntaxpath = "Packages/{}.tmLanguage".format(syntaxname)
 
-        self.window.run_command(
-            'repl_open', {
-                'encoding': 'utf8',
-                'type': 'subprocess',
-                'cmd': cmd_list,
-                'cwd': '$file_path',
-                'syntax': syntaxpath,
-                'view_id': '*REPL* [python]',
-                'external_id': environment,
-            }
-        )
+        self.window.run_command('repl_open', {
+            'encoding': 'utf8',
+            'type': 'subprocess',
+            'cmd': cmd_list,
+            'cwd': '$file_path',
+            'syntax': syntaxpath,
+            'view_id': '*REPL* [python]',
+            'external_id': environment,
+        })
 
 
 class REPLViewEventListener(sublime_plugin.ViewEventListener):
@@ -408,27 +386,16 @@ class REPLViewEventListener(sublime_plugin.ViewEventListener):
         """
         window, view = self.window, self.view
         repl_group = 1
-        self.remove_row = (
-            window.num_groups() == 2 and
-            window.get_view_index(view)[0] == repl_group and
-            len(window.sheets_in_group(repl_group)) == 1
-        )
+        self.remove_row = (window.num_groups() == 2 and window.get_view_index(view)[0] == repl_group and len(window.sheets_in_group(repl_group)) == 1)
 
     def on_close(self):
         """Remove row if conditions are met"""
         if self.remove_row:
-            self.window.run_command(
-                'set_layout', {
-                    'cols':[0.0, 1.0],
-                    'rows':[0.0, 1.0],
-                    'cells':[[0, 0, 1, 1]]
-                }
-            )
+            self.window.run_command('set_layout', {'cols': [0.0, 1.0], 'rows': [0.0, 1.0], 'cells': [[0, 0, 1, 1]]})
 
 
 class ListCondaPackageCommand(CondaCommand):
     """Contains all of the methods needed to list all installed packages."""
-
     def run(self):
         """Display 'Conda: List' in Sublime Text's command palette.
 
@@ -444,9 +411,7 @@ class ListCondaPackageCommand(CondaCommand):
             environment_path = self.project_data['conda_environment']
             environment = self.retrieve_environment_name(environment_path)
 
-            package_data = subprocess.check_output([self.executable, '-m', 'conda', 'list',
-                                                    '--name', environment],
-                                                   startupinfo=self.startupinfo, universal_newlines=True)
+            package_data = subprocess.check_output([self.executable, '-m', 'conda', 'list', '--name', environment], startupinfo=self.startupinfo, universal_newlines=True)
 
             packages = package_data.splitlines()[2:]
             package_names = [packages[i].split()[0] for i, _ in enumerate(packages)]
@@ -459,19 +424,16 @@ class ListCondaPackageCommand(CondaCommand):
 
 class InstallCondaPackageCommand(CondaCommand):
     """Contains all of the methods needed to install a conda package."""
-
     def run(self):
         """Display an input box allowing the user to input a package name."""
-        self.window.show_input_panel('Package Name:', '', self.install_package,
-                                     None, None)
+        self.window.show_input_panel('Package Name:', '', self.install_package, None, None)
 
     def install_package(self, package):
         """Install the given package name via conda."""
         try:
             environment_path = self.project_data['conda_environment']
             environment = self.retrieve_environment_name(environment_path)
-            cmd = [self.executable, '-m', 'conda', 'install', package,
-                   '--name', environment, '-y', '-q']
+            cmd = [self.executable, '-m', 'conda', 'install', package, '--name', environment, '-y', '-q']
             self.window.run_command('exec', {'cmd': cmd})
 
         except KeyError:
@@ -480,7 +442,6 @@ class InstallCondaPackageCommand(CondaCommand):
 
 class RemoveCondaPackageCommand(CondaCommand):
     """Contains all of the methods needed to remove a conda package."""
-
     def run(self):
         """Display an input box allowing the user to pick a package to remove."""
         self.window.show_quick_panel(self.environment_packages, self.remove_package)
@@ -496,9 +457,7 @@ class RemoveCondaPackageCommand(CondaCommand):
             environment_path = self.project_data['conda_environment']
             environment = self.retrieve_environment_name(environment_path)
 
-            package_data = subprocess.check_output([self.executable, '-m', 'conda', 'list',
-                                                    '--name', environment],
-                                                   startupinfo=self.startupinfo, universal_newlines=True)
+            package_data = subprocess.check_output([self.executable, '-m', 'conda', 'list', '--name', environment], startupinfo=self.startupinfo, universal_newlines=True)
 
             packages = package_data.splitlines()[2:]
             package_names = [packages[i].split()[0] for i, _ in enumerate(packages)]
@@ -517,15 +476,13 @@ class RemoveCondaPackageCommand(CondaCommand):
 
             environment = self.retrieve_environment_name(environment_path)
 
-            cmd = [self.executable, '-m', 'conda', 'remove', package_to_remove,
-                   '--name', environment, '-y', '-q']
+            cmd = [self.executable, '-m', 'conda', 'remove', package_to_remove, '--name', environment, '-y', '-q']
 
             self.window.run_command('exec', {'cmd': cmd})
 
 
 class ListCondaChannelsCommand(CondaCommand):
     """Contains all of the methods needed to display conda's channel sources."""
-
     def run(self):
         """Display 'Conda: List Channel Sources' in Sublime Text's command palette.
 
@@ -538,9 +495,7 @@ class ListCondaChannelsCommand(CondaCommand):
     @property
     def channel_sources(self):
         """List each channel source found in the condarc configuration file."""
-        sources = subprocess.check_output([self.executable, '-m', 'conda', 'config',
-                                          '--show-sources', '--json'],
-                                          startupinfo=self.startupinfo)
+        sources = subprocess.check_output([self.executable, '-m', 'conda', 'config', '--show-sources', '--json'], startupinfo=self.startupinfo)
         sources = json.loads(sources.decode())
 
         try:
@@ -552,11 +507,9 @@ class ListCondaChannelsCommand(CondaCommand):
 
 class SearchCondaPackageCommand(CondaCommand):
     """Contains all of the methods needed to search for a conda package."""
-
     def run(self):
         """Display an input box allowing the user to input a package name."""
-        self.window.show_input_panel('Package Name:', '', self.search_package,
-                                     None, None)
+        self.window.show_input_panel('Package Name:', '', self.search_package, None, None)
 
     def search_package(self, package):
         """Search for a package included in the defaults channel."""
@@ -566,7 +519,6 @@ class SearchCondaPackageCommand(CondaCommand):
 
 class AddCondaChannelCommand(CondaCommand):
     """Contains all of the methods needed to add a conda channel source."""
-
     def run(self):
         """Display 'Conda: Add Channel Source' in Sublime Text's command palette.
 
@@ -574,20 +526,17 @@ class AddCondaChannelCommand(CondaCommand):
         an input box will show allowing the user to type the name
         of the channel to add.
         """
-        self.window.show_input_panel('Conda Channel Name:', '',
-                                     self.add_channel, None, None)
+        self.window.show_input_panel('Conda Channel Name:', '', self.add_channel, None, None)
 
     def add_channel(self, channel):
         """Add the given channel to the condarc configuration file."""
-        cmd = [self.executable, '-m', 'conda', 'config', '--add',
-               'channels', channel]
+        cmd = [self.executable, '-m', 'conda', 'config', '--add', 'channels', channel]
 
         self.window.run_command('exec', {'cmd': cmd})
 
 
 class RemoveCondaChannelCommand(CondaCommand):
     """Contains all of the methods needed to remove a conda channel source."""
-
     def run(self):
         """Display 'Conda: Remove Channel Source' in Sublime Text's command palette.
 
@@ -604,9 +553,7 @@ class RemoveCondaChannelCommand(CondaCommand):
         This property had to be duplicated as the attribute from
         ListCondaChannelCommand could not be inherited properly.
         """
-        sources = subprocess.check_output([self.executable, '-m', 'conda', 'config',
-                                          '--show-sources', '--json'],
-                                          startupinfo=self.startupinfo)
+        sources = subprocess.check_output([self.executable, '-m', 'conda', 'config', '--show-sources', '--json'], startupinfo=self.startupinfo)
         sources = json.loads(sources.decode())
 
         try:
@@ -620,8 +567,7 @@ class RemoveCondaChannelCommand(CondaCommand):
         if index != -1:
             channel = self.channel_sources[index]
 
-            cmd = [self.executable, '-m', 'conda', 'config', '--remove',
-                   'channels', channel]
+            cmd = [self.executable, '-m', 'conda', 'config', '--remove', 'channels', channel]
 
             self.window.run_command('exec', {'cmd': cmd})
 
@@ -643,9 +589,7 @@ class ExecuteCondaEnvironmentCommand(CondaCommand):
         cls = type(self)
 
         if cls._conda_version is None:
-            response = subprocess.check_output(
-                [self.executable, '-m', 'conda', 'info', '--json'],
-                startupinfo=self.startupinfo)
+            response = subprocess.check_output([self.executable, '-m', 'conda', 'info', '--json'], startupinfo=self.startupinfo)
 
             parsed = json.loads(response.decode())['conda_version']
             cls._conda_version = tuple(int(n) for n in parsed.split('.'))
@@ -685,9 +629,9 @@ class ExecuteCondaEnvironmentCommand(CondaCommand):
             python_executable = 'pythonw' if use_pythonw else 'python'
 
             if sys.platform == 'win32':
-                executable_path = '{}\\{}' .format(environment, python_executable)
+                executable_path = '{}\\{}'.format(environment, python_executable)
             else:
-                executable_path = '{}/bin/{}' .format(environment, python_executable)
+                executable_path = '{}/bin/{}'.format(environment, python_executable)
 
             kwargs['cmd'][0] = os.path.normpath(executable_path)
             kwargs['shell'] = run_through_shell
